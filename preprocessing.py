@@ -8,6 +8,12 @@ from keras.utils import Sequence
 import xml.etree.ElementTree as ET
 from utils import BoundBox, bbox_iou
 
+
+def get_attrs(attr_file):
+	attrs = np.loadtxt(attr_file, delimiter=" ",dtype=np.double)
+	return attrs
+	
+
 def parse_annotation(ann_dir, img_dir, labels=[]):
     all_imgs = []
     seen_labels = {}
@@ -71,7 +77,11 @@ class BatchGenerator(Sequence):
         self.shuffle = shuffle
         self.jitter  = jitter
         self.norm    = norm
-
+        
+        # ----------adding this--------------------------------------------------------------------------------------------------------------------------------
+        self.attrs = get_attrs('./voc/voc.txt')
+        # ----------------------------------------------------------------------------------
+        
         self.anchors = [BoundBox(0, 0, config['ANCHORS'][2*i], config['ANCHORS'][2*i+1]) for i in range(int(len(config['ANCHORS'])//2))]
 
         ### augmentors by https://github.com/aleju/imgaug
@@ -169,7 +179,12 @@ class BatchGenerator(Sequence):
 
         x_batch = np.zeros((r_bound - l_bound, self.config['IMAGE_H'], self.config['IMAGE_W'], 3))                         # input images
         b_batch = np.zeros((r_bound - l_bound, 1     , 1     , 1    ,  self.config['TRUE_BOX_BUFFER'], 4))   # list of self.config['TRUE_self.config['BOX']_BUFFER'] GT boxes
-        y_batch = np.zeros((r_bound - l_bound, self.config['GRID_H'],  self.config['GRID_W'], self.config['BOX'], 4+1+len(self.config['LABELS'])))                # desired network output
+        
+		# ----------Changing this--------------------------------------------------------------------------------------------------------------------------------
+        # y_batch = np.zeros((r_bound - l_bound, self.config['GRID_H'],  self.config['GRID_W'], self.config['BOX'], 4+1+len(self.config['LABELS'])))                # desired network output
+
+        y_batch = np.zeros((r_bound - l_bound, self.config['GRID_H'],  self.config['GRID_W'], self.config['BOX'], 4+1+64))       # desired output: 64-D semantic vector instead of 20 class probs
+		# -------------------------------------------------------------------------------------------------------------------------------------------------------	
 
         for train_instance in self.images[l_bound:r_bound]:
             # augment input image and fix object's position and size
@@ -216,7 +231,12 @@ class BatchGenerator(Sequence):
                         # assign ground truth x, y, w, h, confidence and class probs to y_batch
                         y_batch[instance_count, grid_y, grid_x, best_anchor, 0:4] = box
                         y_batch[instance_count, grid_y, grid_x, best_anchor, 4  ] = 1.
-                        y_batch[instance_count, grid_y, grid_x, best_anchor, 5+obj_indx] = 1
+                        
+                        # ----------Changing this--------------------------------------------------------------------------------------------------------------------------------
+                        #y_batch[instance_count, grid_y, grid_x, best_anchor, 5+obj_indx] = 1
+                        
+                        y_batch[instance_count, grid_y, grid_x, best_anchor, 5:] = self.attrs[obj_indx]
+                        # ---------------------------------------------------------------------------------------------------------------------------------------------------------
                         
                         # assign the true box to b_batch
                         b_batch[instance_count, 0, 0, 0, true_box_index] = box
@@ -242,8 +262,7 @@ class BatchGenerator(Sequence):
             # increase instance counter in current batch
             instance_count += 1  
 
-        #print(' new batch created', idx)
-
+        print(' new batch created', idx)
         return [x_batch, b_batch], y_batch
 
     def on_epoch_end(self):

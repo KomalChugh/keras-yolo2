@@ -3,19 +3,20 @@
         "backend":              "Full Yolo",
         "input_size":           416,
         "anchors":              [0.57273, 0.677385, 1.87446, 2.06253, 3.33843, 5.47434, 7.88282, 3.52778, 9.77052, 9.16828],
-        "max_box_per_image":    10,        
-        "labels":               ["kangaroo"]
+        "max_box_per_image":    10, 
+       
+        "labels":               ["aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"]
     },
 
     "train": {
-        "train_image_folder":   "/home/andy/data/kangaroo/images/",
-        "train_annot_folder":   "/home/andy/data/kangaroo/annots/",     
+        "train_image_folder":   "./voc/train_small_img/",
+        "train_annot_folder":   "./voc/train_small_annot/",     
           
-        "train_times":          8,
-        "pretrained_weights":   "full_yolo_kangaroo3.h5",
-        "batch_size":           16,
+        "train_times":          3,
+        "pretrained_weights":   "darknet19_448.weights",
+        "batch_size":           2,
         "learning_rate":        1e-4,
-        "nb_epochs":            1,
+        "nb_epochs":            3,
         "warmup_epochs":        3,
 
         "object_scale":         5.0 ,
@@ -23,13 +24,13 @@
         "coord_scale":          1.0,
         "class_scale":          1.0,
 
-        "saved_weights_name":   "full_yolo_kangaroo.h5",
+        "saved_weights_name":   "weights_voc.h5",
         "debug":                true
     },
 
     "valid": {
-        "valid_image_folder":   "",
-        "valid_annot_folder":   "",
+        "valid_image_folder":   "./voc/valid_small_img/",
+        "valid_annot_folder":   "./voc/valid_small_annot/",
 
         "valid_times":          1
     }
